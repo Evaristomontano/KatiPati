@@ -240,7 +240,10 @@ function drawKati() {
   ctx.fill();
 
   ctx.fillStyle = "#2b2b2b";
-  ctx.fillRect(x - 8, y - 26, 16, 4);
+  ctx.beginPath();
+  ctx.arc(x - 4, y - 22, 1.6, 0, Math.PI * 2);
+  ctx.arc(x + 4, y - 22, 1.6, 0, Math.PI * 2);
+  ctx.fill();
   ctx.strokeStyle = "#d7d7d7";
   ctx.lineWidth = 1.5;
   ctx.beginPath();
@@ -254,7 +257,11 @@ function drawKati() {
   if (player.mood === "sad") {
     ctx.fillRect(x - 4, y - 10, 8, 2);
   } else {
-    ctx.fillRect(x - 5, y - 9, 10, 3);
+    ctx.beginPath();
+    ctx.arc(x, y - 9, 5, 0, Math.PI);
+    ctx.strokeStyle = "#b35252";
+    ctx.lineWidth = 1.8;
+    ctx.stroke();
   }
 
   ctx.fillStyle = "#d7d3f7";
@@ -393,9 +400,16 @@ function drawFriend() {
   ctx.fill();
 
   ctx.fillStyle = "#2b2b2b";
-  ctx.fillRect(x - 6, y - 24, 12, 3);
+  ctx.beginPath();
+  ctx.arc(x - 3, y - 21, 1.4, 0, Math.PI * 2);
+  ctx.arc(x + 3, y - 21, 1.4, 0, Math.PI * 2);
+  ctx.fill();
   ctx.fillStyle = "#b35252";
-  ctx.fillRect(x - 3, y - 18, 6, 2);
+  ctx.beginPath();
+  ctx.arc(x, y - 18, 4, 0, Math.PI);
+  ctx.strokeStyle = "#b35252";
+  ctx.lineWidth = 1.6;
+  ctx.stroke();
 
   ctx.fillStyle = "#bfe0ff";
   ctx.beginPath();
