@@ -14,7 +14,7 @@ body {
   min-height: 100vh;
   display: flex;
   justify-content: center;
-  padding: 24px;
+  padding: 16px;
 }
 
 .page {
@@ -52,12 +52,11 @@ body {
 }
 
 canvas {
-  width: 960px;
-  max-width: 100%;
+  width: min(420px, 100%);
   height: auto;
   border-radius: 12px;
   border: 4px solid #ffd2ec;
-  image-rendering: pixelated;
+  image-rendering: auto;
   background: #84c5ff;
 }
 

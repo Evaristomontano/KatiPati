@@ -1,10 +1,11 @@
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
+ctx.imageSmoothingEnabled = true;
 
 const world = {
   width: canvas.width,
   height: canvas.height,
-  groundY: 142,
+  groundY: canvas.height - 90,
   gravity: 0.18,
 };
 
@@ -16,7 +17,11 @@ const player = {
   mood: "happy",
 };
 
-const lanes = [86, 160, 234];
+const lanes = [
+  world.width * 0.2,
+  world.width * 0.5,
+  world.width * 0.8,
+];
 
 let keys = {};
 let balls = [];
@@ -35,7 +40,7 @@ faceImage.src = "kati-face.png";
 let clapFrame = 0;
 
 const throwInterval = 5000;
-const flightDuration = 2100;
+const flightDuration = 2300;
 
 lastThrow = throwInterval;
 
@@ -150,9 +155,9 @@ function drawBackground() {
   if (faceImage.complete && faceImage.naturalWidth > 0) {
     ctx.save();
     ctx.beginPath();
-    ctx.arc(280, 28, 18, 0, Math.PI * 2);
+    ctx.arc(world.width - 44, 48, 22, 0, Math.PI * 2);
     ctx.clip();
-    ctx.drawImage(faceImage, 250, 6, 60, 44);
+    ctx.drawImage(faceImage, world.width - 78, 22, 68, 52);
     ctx.restore();
   }
 
@@ -164,7 +169,7 @@ function drawBackground() {
   ctx.ellipse(240, 36, 55, 28, 0, 0, Math.PI * 2);
   ctx.fill();
 
-  const stripeWidth = 20;
+  const stripeWidth = 24;
   for (let i = 0; i < world.width; i += stripeWidth) {
     ctx.fillStyle = i / stripeWidth % 2 === 0 ? palette.tentRed : palette.tentPink;
     ctx.fillRect(i, 0, stripeWidth, 80);
@@ -175,6 +180,15 @@ function drawBackground() {
 
   ctx.fillStyle = palette.floor;
   ctx.fillRect(0, world.groundY, world.width, world.height - world.groundY);
+
+  ctx.strokeStyle = "rgba(255,255,255,0.35)";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(world.width / 3, 84);
+  ctx.lineTo(world.width / 3, world.groundY);
+  ctx.moveTo((world.width / 3) * 2, 84);
+  ctx.lineTo((world.width / 3) * 2, world.groundY);
+  ctx.stroke();
 
   for (let i = 12; i < world.width; i += 28) {
     ctx.fillStyle = "#ffd17b";
@@ -196,7 +210,7 @@ function drawBall(ball) {
   const endX = lanes[ball.toLane];
   const t = ball.t;
   const x = startX + (endX - startX) * t;
-  const peak = 56;
+  const peak = 140;
   const y = world.groundY - 6 - peak * (1 - (2 * t - 1) ** 2);
 
   ctx.fillStyle = ball.color;
@@ -212,52 +226,61 @@ function drawKati() {
   const y = player.y;
 
   ctx.fillStyle = "#6b4b39";
-  ctx.fillRect(x - 12, y - 34, 24, 16);
+  ctx.beginPath();
+  ctx.ellipse(x, y - 32, 18, 16, 0, 0, Math.PI * 2);
+  ctx.fill();
   ctx.fillStyle = "#4a2f23";
-  ctx.fillRect(x - 10, y - 40, 20, 6);
-  ctx.fillRect(x - 12, y - 38, 4, 6);
-  ctx.fillRect(x + 8, y - 38, 4, 6);
+  ctx.beginPath();
+  ctx.ellipse(x, y - 38, 20, 8, 0, Math.PI, 0);
+  ctx.fill();
 
   ctx.fillStyle = "#f6d7c3";
-  ctx.fillRect(x - 6, y - 24, 12, 10);
-  ctx.fillStyle = "#f6d7c3";
-  ctx.fillRect(x - 7, y - 16, 14, 8);
+  ctx.beginPath();
+  ctx.ellipse(x, y - 22, 10, 12, 0, 0, Math.PI * 2);
+  ctx.fill();
 
   ctx.fillStyle = "#2b2b2b";
-  ctx.fillRect(x - 6, y - 22, 4, 3);
-  ctx.fillRect(x + 2, y - 22, 4, 3);
-  ctx.fillRect(x - 1, y - 20, 2, 2);
-
+  ctx.fillRect(x - 8, y - 26, 16, 4);
   ctx.strokeStyle = "#d7d7d7";
+  ctx.lineWidth = 1.5;
   ctx.beginPath();
-  ctx.arc(x - 9, y - 16, 3, 0, Math.PI * 2);
+  ctx.arc(x - 11, y - 20, 4, 0, Math.PI * 2);
   ctx.stroke();
   ctx.beginPath();
-  ctx.arc(x + 9, y - 16, 3, 0, Math.PI * 2);
+  ctx.arc(x + 11, y - 20, 4, 0, Math.PI * 2);
   ctx.stroke();
 
   ctx.fillStyle = "#b35252";
   if (player.mood === "sad") {
-    ctx.fillRect(x - 3, y - 10, 6, 1);
+    ctx.fillRect(x - 4, y - 10, 8, 2);
   } else {
-    ctx.fillRect(x - 3, y - 9, 6, 2);
-    ctx.fillRect(x - 2, y - 8, 4, 1);
+    ctx.fillRect(x - 5, y - 9, 10, 3);
   }
 
   ctx.fillStyle = "#d7d3f7";
-  ctx.fillRect(x - 10, y - 6, 20, 14);
+  ctx.beginPath();
+  ctx.roundRect(x - 14, y - 6, 28, 18, 6);
+  ctx.fill();
   ctx.fillStyle = "#b6b0ee";
-  ctx.fillRect(x - 10, y + 4, 20, 4);
+  ctx.fillRect(x - 14, y + 6, 28, 5);
   ctx.fillStyle = "#f1efff";
-  ctx.fillRect(x - 6, y, 12, 6);
+  ctx.fillRect(x - 8, y - 1, 16, 7);
 
   ctx.fillStyle = "#b5b5c8";
-  ctx.fillRect(x - 14, y - 4, 4, 10);
-  ctx.fillRect(x + 10, y - 4, 4, 10);
+  ctx.beginPath();
+  ctx.roundRect(x - 22, y - 4, 8, 14, 3);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.roundRect(x + 14, y - 4, 8, 14, 3);
+  ctx.fill();
 
   ctx.fillStyle = "#b6b0ee";
-  ctx.fillRect(x - 8, y + 8, 6, 8);
-  ctx.fillRect(x + 2, y + 8, 6, 8);
+  ctx.beginPath();
+  ctx.roundRect(x - 10, y + 12, 8, 12, 3);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.roundRect(x + 2, y + 12, 8, 12, 3);
+  ctx.fill();
 }
 
 function drawHUD() {
@@ -346,7 +369,7 @@ function playChirp() {
   osc.frequency.setValueAtTime(740, audioContext.currentTime);
   osc.frequency.exponentialRampToValueAtTime(980, audioContext.currentTime + 0.12);
   gain.gain.setValueAtTime(0, audioContext.currentTime);
-  gain.gain.linearRampToValueAtTime(0.6, audioContext.currentTime + 0.02);
+  gain.gain.linearRampToValueAtTime(0.85, audioContext.currentTime + 0.02);
   gain.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.18);
   osc.connect(gain);
   gain.connect(masterGain);
@@ -357,34 +380,45 @@ function playChirp() {
 function drawFriend() {
   clapFrame = (clapFrame + 1) % 40;
   const clapOpen = clapFrame < 20;
-  const x = 40;
-  const y = 132;
+  const x = world.width * 0.18;
+  const y = world.groundY - 8;
 
-  ctx.fillStyle = "#5c3a2b";
-  ctx.fillRect(x - 8, y - 28, 16, 10);
-  ctx.fillStyle = "#7b5340";
-  ctx.fillRect(x - 10, y - 24, 20, 8);
-
+  ctx.fillStyle = "#6b4b39";
+  ctx.beginPath();
+  ctx.ellipse(x, y - 30, 12, 10, 0, 0, Math.PI * 2);
+  ctx.fill();
   ctx.fillStyle = "#f2c9b2";
-  ctx.fillRect(x - 5, y - 20, 10, 8);
+  ctx.beginPath();
+  ctx.ellipse(x, y - 22, 8, 8, 0, 0, Math.PI * 2);
+  ctx.fill();
+
   ctx.fillStyle = "#2b2b2b";
-  ctx.fillRect(x - 3, y - 18, 2, 2);
-  ctx.fillRect(x + 1, y - 18, 2, 2);
+  ctx.fillRect(x - 6, y - 24, 12, 3);
   ctx.fillStyle = "#b35252";
-  ctx.fillRect(x - 2, y - 14, 4, 1);
+  ctx.fillRect(x - 3, y - 18, 6, 2);
 
   ctx.fillStyle = "#bfe0ff";
-  ctx.fillRect(x - 7, y - 10, 14, 12);
+  ctx.beginPath();
+  ctx.roundRect(x - 10, y - 10, 20, 14, 5);
+  ctx.fill();
   ctx.fillStyle = "#a9c7f2";
-  ctx.fillRect(x - 7, y + 2, 14, 3);
+  ctx.fillRect(x - 10, y + 2, 20, 4);
 
   ctx.fillStyle = "#a9c7f2";
   if (clapOpen) {
-    ctx.fillRect(x - 13, y - 8, 6, 4);
-    ctx.fillRect(x + 7, y - 8, 6, 4);
+    ctx.beginPath();
+    ctx.roundRect(x - 18, y - 8, 8, 4, 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.roundRect(x + 10, y - 8, 8, 4, 2);
+    ctx.fill();
   } else {
-    ctx.fillRect(x - 7, y - 8, 6, 4);
-    ctx.fillRect(x + 1, y - 8, 6, 4);
+    ctx.beginPath();
+    ctx.roundRect(x - 10, y - 8, 8, 4, 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.roundRect(x + 2, y - 8, 8, 4, 2);
+    ctx.fill();
   }
 }
 
@@ -422,6 +456,26 @@ window.addEventListener("keydown", (event) => {
 
 window.addEventListener("keyup", (event) => {
   keys[event.code] = false;
+});
+
+function setLaneFromPointer(event) {
+  const rect = canvas.getBoundingClientRect();
+  const x = event.clientX - rect.left;
+  const laneWidth = rect.width / 3;
+  const laneIndex = Math.min(2, Math.max(0, Math.floor(x / laneWidth)));
+  player.lane = laneIndex;
+  player.x = lanes[player.lane];
+}
+
+canvas.addEventListener("pointerdown", (event) => {
+  startMusic();
+  setLaneFromPointer(event);
+});
+
+canvas.addEventListener("pointermove", (event) => {
+  if (event.pressure > 0 || event.buttons > 0) {
+    setLaneFromPointer(event);
+  }
 });
 
 window.addEventListener("load", () => {
