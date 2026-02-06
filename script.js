@@ -32,6 +32,7 @@ let audioContext = null;
 let masterGain = null;
 const faceImage = new Image();
 faceImage.src = "kati-face.png";
+let clapFrame = 0;
 
 const throwInterval = 5000;
 const flightDuration = 2100;
@@ -186,6 +187,8 @@ function drawBackground() {
     ctx.arc(i + 10, 70, 3, 0, Math.PI * 2);
     ctx.fill();
   }
+
+  drawFriend();
 }
 
 function drawBall(ball) {
@@ -208,14 +211,12 @@ function drawKati() {
   const x = player.x;
   const y = player.y;
 
-  ctx.fillStyle = "#5a3a2c";
-  ctx.fillRect(x - 12, y - 32, 24, 14);
-  ctx.fillStyle = "#6c4735";
-  ctx.fillRect(x - 14, y - 28, 28, 12);
+  ctx.fillStyle = "#6b4b39";
+  ctx.fillRect(x - 12, y - 34, 24, 16);
   ctx.fillStyle = "#4a2f23";
-  ctx.fillRect(x - 10, y - 38, 20, 6);
-  ctx.fillRect(x - 12, y - 36, 4, 6);
-  ctx.fillRect(x + 8, y - 36, 4, 6);
+  ctx.fillRect(x - 10, y - 40, 20, 6);
+  ctx.fillRect(x - 12, y - 38, 4, 6);
+  ctx.fillRect(x + 8, y - 38, 4, 6);
 
   ctx.fillStyle = "#f6d7c3";
   ctx.fillRect(x - 6, y - 24, 12, 10);
@@ -223,8 +224,8 @@ function drawKati() {
   ctx.fillRect(x - 7, y - 16, 14, 8);
 
   ctx.fillStyle = "#2b2b2b";
-  ctx.fillRect(x - 7, y - 22, 6, 4);
-  ctx.fillRect(x + 1, y - 22, 6, 4);
+  ctx.fillRect(x - 6, y - 22, 4, 3);
+  ctx.fillRect(x + 2, y - 22, 4, 3);
   ctx.fillRect(x - 1, y - 20, 2, 2);
 
   ctx.strokeStyle = "#d7d7d7";
@@ -239,14 +240,15 @@ function drawKati() {
   if (player.mood === "sad") {
     ctx.fillRect(x - 3, y - 10, 6, 1);
   } else {
-    ctx.fillRect(x - 3, y - 9, 6, 1);
+    ctx.fillRect(x - 3, y - 9, 6, 2);
+    ctx.fillRect(x - 2, y - 8, 4, 1);
   }
 
-  ctx.fillStyle = "#c9c5f3";
+  ctx.fillStyle = "#d7d3f7";
   ctx.fillRect(x - 10, y - 6, 20, 14);
   ctx.fillStyle = "#b6b0ee";
   ctx.fillRect(x - 10, y + 4, 20, 4);
-  ctx.fillStyle = "#d7d3f7";
+  ctx.fillStyle = "#f1efff";
   ctx.fillRect(x - 6, y, 12, 6);
 
   ctx.fillStyle = "#b5b5c8";
@@ -344,12 +346,46 @@ function playChirp() {
   osc.frequency.setValueAtTime(740, audioContext.currentTime);
   osc.frequency.exponentialRampToValueAtTime(980, audioContext.currentTime + 0.12);
   gain.gain.setValueAtTime(0, audioContext.currentTime);
-  gain.gain.linearRampToValueAtTime(0.35, audioContext.currentTime + 0.02);
+  gain.gain.linearRampToValueAtTime(0.6, audioContext.currentTime + 0.02);
   gain.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.18);
   osc.connect(gain);
   gain.connect(masterGain);
   osc.start();
   osc.stop(audioContext.currentTime + 0.2);
+}
+
+function drawFriend() {
+  clapFrame = (clapFrame + 1) % 40;
+  const clapOpen = clapFrame < 20;
+  const x = 40;
+  const y = 132;
+
+  ctx.fillStyle = "#5c3a2b";
+  ctx.fillRect(x - 8, y - 28, 16, 10);
+  ctx.fillStyle = "#7b5340";
+  ctx.fillRect(x - 10, y - 24, 20, 8);
+
+  ctx.fillStyle = "#f2c9b2";
+  ctx.fillRect(x - 5, y - 20, 10, 8);
+  ctx.fillStyle = "#2b2b2b";
+  ctx.fillRect(x - 3, y - 18, 2, 2);
+  ctx.fillRect(x + 1, y - 18, 2, 2);
+  ctx.fillStyle = "#b35252";
+  ctx.fillRect(x - 2, y - 14, 4, 1);
+
+  ctx.fillStyle = "#bfe0ff";
+  ctx.fillRect(x - 7, y - 10, 14, 12);
+  ctx.fillStyle = "#a9c7f2";
+  ctx.fillRect(x - 7, y + 2, 14, 3);
+
+  ctx.fillStyle = "#a9c7f2";
+  if (clapOpen) {
+    ctx.fillRect(x - 13, y - 8, 6, 4);
+    ctx.fillRect(x + 7, y - 8, 6, 4);
+  } else {
+    ctx.fillRect(x - 7, y - 8, 6, 4);
+    ctx.fillRect(x + 1, y - 8, 6, 4);
+  }
 }
 
 function draw() {
