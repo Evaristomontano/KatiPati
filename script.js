@@ -30,9 +30,13 @@ let musicStarted = false;
 let musicTimer = null;
 let audioContext = null;
 let masterGain = null;
+const faceImage = new Image();
+faceImage.src = "kati-face.png";
 
 const throwInterval = 5000;
 const flightDuration = 2100;
+
+lastThrow = throwInterval;
 
 const palette = {
   tentRed: "#ff7cab",
@@ -45,7 +49,7 @@ const palette = {
 
 function resetGame() {
   balls = [];
-  lastThrow = 0;
+  lastThrow = throwInterval;
   targetBalls = 1;
   successfulCatches = 0;
   highestBalls = 0;
@@ -79,7 +83,7 @@ function nextLane(fromLane) {
   return Math.random() < 0.5 ? 0 : 2;
 }
 
-function update(delta) {
+function update(deltaMs) {
   if (gameState !== "playing") {
     return;
   }
@@ -96,14 +100,14 @@ function update(delta) {
   }
   player.x = lanes[player.lane];
 
-  lastThrow += delta;
+  lastThrow += deltaMs;
   if (balls.length < targetBalls && lastThrow > throwInterval) {
     spawnBall();
     lastThrow = 0;
   }
 
   for (const ball of balls) {
-    ball.t += (delta * 16) / ball.duration;
+    ball.t += deltaMs / ball.duration;
   }
 
   const remaining = [];
@@ -141,6 +145,15 @@ function gameOver() {
 function drawBackground() {
   ctx.fillStyle = "#6cc0ff";
   ctx.fillRect(0, 0, world.width, world.height);
+
+  if (faceImage.complete && faceImage.naturalWidth > 0) {
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(280, 28, 18, 0, Math.PI * 2);
+    ctx.clip();
+    ctx.drawImage(faceImage, 250, 6, 60, 44);
+    ctx.restore();
+  }
 
   ctx.fillStyle = palette.spotlight;
   ctx.beginPath();
@@ -354,9 +367,9 @@ function draw() {
 }
 
 function loop(timestamp) {
-  const delta = Math.min(32, timestamp - lastTime) || 16;
+  const deltaMs = Math.min(48, timestamp - lastTime) || 16;
   lastTime = timestamp;
-  update(delta / 16);
+  update(deltaMs);
   draw();
   requestAnimationFrame(loop);
 }
