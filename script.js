@@ -12,10 +12,11 @@ const player = {
   x: world.width / 2,
   y: world.groundY,
   width: 18,
-  speed: 1.6,
-  facing: 1,
+  lane: 1,
   mood: "happy",
 };
+
+const lanes = [86, 160, 234];
 
 let keys = {};
 let balls = [];
@@ -23,10 +24,15 @@ let lastTime = 0;
 let lastThrow = 0;
 let targetBalls = 1;
 let successfulCatches = 0;
-let gameState = "start"; // start, playing, gameover
+let gameState = "playing"; // playing, gameover
 let highestBalls = 0;
+let musicStarted = false;
+let musicTimer = null;
+let audioContext = null;
+let masterGain = null;
 
-const throwInterval = 480;
+const throwInterval = 5000;
+const flightDuration = 2100;
 
 const palette = {
   tentRed: "#ff7cab",
@@ -43,20 +49,34 @@ function resetGame() {
   targetBalls = 1;
   successfulCatches = 0;
   highestBalls = 0;
-  player.x = world.width / 2;
+  player.lane = 1;
+  player.x = lanes[player.lane];
   player.mood = "happy";
   gameState = "playing";
 }
 
 function spawnBall() {
   const color = palette.ball[balls.length % palette.ball.length];
+  const fromLane = balls.length % 2 === 0 ? 0 : 2;
+  const toLane = 1;
+  playChirp();
   balls.push({
-    x: player.x,
-    y: player.y - 18,
-    vx: (Math.random() * 0.6 - 0.3),
-    vy: -2.9 - Math.random() * 0.3,
+    fromLane,
+    toLane,
+    t: 0,
+    duration: flightDuration + Math.random() * 220,
     color,
   });
+}
+
+function nextLane(fromLane) {
+  if (fromLane === 0) {
+    return 1;
+  }
+  if (fromLane === 2) {
+    return 1;
+  }
+  return Math.random() < 0.5 ? 0 : 2;
 }
 
 function update(delta) {
@@ -64,13 +84,17 @@ function update(delta) {
     return;
   }
 
-  const direction = (keys.ArrowRight || keys.KeyD ? 1 : 0) -
-    (keys.ArrowLeft || keys.KeyA ? 1 : 0);
-  if (direction !== 0) {
-    player.facing = direction;
+  if (keys.ArrowLeft || keys.KeyA) {
+    player.lane = Math.max(0, player.lane - 1);
+    keys.ArrowLeft = false;
+    keys.KeyA = false;
   }
-  player.x += direction * player.speed * delta;
-  player.x = Math.max(18, Math.min(world.width - 18, player.x));
+  if (keys.ArrowRight || keys.KeyD) {
+    player.lane = Math.min(lanes.length - 1, player.lane + 1);
+    keys.ArrowRight = false;
+    keys.KeyD = false;
+  }
+  player.x = lanes[player.lane];
 
   lastThrow += delta;
   if (balls.length < targetBalls && lastThrow > throwInterval) {
@@ -78,16 +102,14 @@ function update(delta) {
     lastThrow = 0;
   }
 
-  balls.forEach((ball) => {
-    ball.vy += world.gravity * delta;
-    ball.x += ball.vx * delta;
-    ball.y += ball.vy * delta;
-  });
+  for (const ball of balls) {
+    ball.t += (delta * 16) / ball.duration;
+  }
 
   const remaining = [];
   for (const ball of balls) {
-    if (ball.y >= world.groundY - 4) {
-      const caught = Math.abs(ball.x - player.x) < player.width;
+    if (ball.t >= 1) {
+      const caught = player.lane === ball.toLane;
       if (!caught) {
         gameOver();
         return;
@@ -98,6 +120,12 @@ function update(delta) {
         successfulCatches = 0;
         targetBalls += 1;
       }
+      const newFrom = ball.toLane;
+      ball.fromLane = newFrom;
+      ball.toLane = nextLane(newFrom);
+      ball.t = 0;
+      ball.duration = flightDuration + Math.random() * 220;
+      remaining.push(ball);
     } else {
       remaining.push(ball);
     }
@@ -148,9 +176,16 @@ function drawBackground() {
 }
 
 function drawBall(ball) {
+  const startX = lanes[ball.fromLane];
+  const endX = lanes[ball.toLane];
+  const t = ball.t;
+  const x = startX + (endX - startX) * t;
+  const peak = 56;
+  const y = world.groundY - 6 - peak * (1 - (2 * t - 1) ** 2);
+
   ctx.fillStyle = ball.color;
   ctx.beginPath();
-  ctx.arc(ball.x, ball.y, 4, 0, Math.PI * 2);
+  ctx.arc(x, y, 4, 0, Math.PI * 2);
   ctx.fill();
   ctx.strokeStyle = palette.outline;
   ctx.stroke();
@@ -160,55 +195,54 @@ function drawKati() {
   const x = player.x;
   const y = player.y;
 
-  ctx.fillStyle = "#5b3a23";
-  ctx.fillRect(x - 10, y - 26, 20, 20);
-  ctx.fillStyle = "#f4e4d0";
-  ctx.fillRect(x - 6, y - 20, 12, 14);
+  ctx.fillStyle = "#5a3a2c";
+  ctx.fillRect(x - 12, y - 32, 24, 14);
+  ctx.fillStyle = "#6c4735";
+  ctx.fillRect(x - 14, y - 28, 28, 12);
+  ctx.fillStyle = "#4a2f23";
+  ctx.fillRect(x - 10, y - 38, 20, 6);
+  ctx.fillRect(x - 12, y - 36, 4, 6);
+  ctx.fillRect(x + 8, y - 36, 4, 6);
 
-  ctx.fillStyle = "#6b4a2d";
-  ctx.fillRect(x - 14, y - 30, 28, 10);
-  ctx.fillStyle = "#8b5e3b";
-  ctx.fillRect(x - 8, y - 34, 16, 8);
+  ctx.fillStyle = "#f6d7c3";
+  ctx.fillRect(x - 6, y - 24, 12, 10);
+  ctx.fillStyle = "#f6d7c3";
+  ctx.fillRect(x - 7, y - 16, 14, 8);
 
-  ctx.fillStyle = "#432515";
-  ctx.fillRect(x - 16, y - 32, 6, 6);
-  ctx.fillRect(x + 10, y - 32, 6, 6);
+  ctx.fillStyle = "#2b2b2b";
+  ctx.fillRect(x - 7, y - 22, 6, 4);
+  ctx.fillRect(x + 1, y - 22, 6, 4);
+  ctx.fillRect(x - 1, y - 20, 2, 2);
 
-  ctx.fillStyle = "#ffe1c2";
-  ctx.fillRect(x - 7, y - 32, 14, 8);
+  ctx.strokeStyle = "#d7d7d7";
+  ctx.beginPath();
+  ctx.arc(x - 9, y - 16, 3, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(x + 9, y - 16, 3, 0, Math.PI * 2);
+  ctx.stroke();
 
-  ctx.fillStyle = "#3a2b4c";
-  ctx.fillRect(x - 4, y - 18, 3, 3);
-  ctx.fillRect(x + 1, y - 18, 3, 3);
-  ctx.fillRect(x - 2, y - 14, 4, 1);
-
+  ctx.fillStyle = "#b35252";
   if (player.mood === "sad") {
-    ctx.clearRect(x - 2, y - 14, 4, 1);
-    ctx.fillRect(x - 2, y - 12, 4, 1);
+    ctx.fillRect(x - 3, y - 10, 6, 1);
+  } else {
+    ctx.fillRect(x - 3, y - 9, 6, 1);
   }
 
-  ctx.fillStyle = "#c98252";
-  ctx.fillRect(x - 8, y - 6, 16, 10);
-  ctx.fillStyle = "#e7c4a0";
-  ctx.fillRect(x - 6, y - 2, 12, 6);
+  ctx.fillStyle = "#c9c5f3";
+  ctx.fillRect(x - 10, y - 6, 20, 14);
+  ctx.fillStyle = "#b6b0ee";
+  ctx.fillRect(x - 10, y + 4, 20, 4);
+  ctx.fillStyle = "#d7d3f7";
+  ctx.fillRect(x - 6, y, 12, 6);
 
-  ctx.fillStyle = "#b86d3e";
-  ctx.fillRect(x - 14, y - 6, 6, 10);
-  ctx.fillRect(x + 8, y - 6, 6, 10);
+  ctx.fillStyle = "#b5b5c8";
+  ctx.fillRect(x - 14, y - 4, 4, 10);
+  ctx.fillRect(x + 10, y - 4, 4, 10);
 
-  ctx.fillStyle = "#b86d3e";
-  ctx.fillRect(x - 10, y + 4, 6, 8);
-  ctx.fillRect(x + 4, y + 4, 6, 8);
-
-  ctx.fillStyle = "#7b4a2a";
-  ctx.fillRect(x + 10, y - 2, 10, 12);
-  ctx.fillStyle = "#c9956a";
-  ctx.fillRect(x + 12, y + 2, 6, 6);
-  ctx.fillStyle = "#3a2b4c";
-  ctx.fillRect(x + 13, y + 4, 2, 2);
-
-  ctx.fillStyle = "#9c6b4b";
-  ctx.fillRect(x - 6 + player.facing * 3, y - 8, 8, 3);
+  ctx.fillStyle = "#b6b0ee";
+  ctx.fillRect(x - 8, y + 8, 6, 8);
+  ctx.fillRect(x + 2, y + 8, 6, 8);
 }
 
 function drawHUD() {
@@ -235,15 +269,82 @@ function drawMessage(text, subtext) {
   ctx.fillText(subtext, 64, 100);
 }
 
+function startMusic() {
+  if (musicStarted) {
+    return;
+  }
+  musicStarted = true;
+
+  initAudio();
+
+  const melody = [
+    523.25, 659.25, 587.33, 783.99,
+    698.46, 659.25, 523.25, 392.0,
+    440.0, 523.25, 587.33, 659.25,
+    587.33, 523.25, 440.0, 392.0,
+  ];
+
+  const beatMs = 260;
+  let index = 0;
+
+  const playNote = (frequency, durationMs) => {
+    const osc = audioContext.createOscillator();
+    const gain = audioContext.createGain();
+    osc.type = "triangle";
+    osc.frequency.value = frequency;
+    gain.gain.setValueAtTime(0, audioContext.currentTime);
+    gain.gain.linearRampToValueAtTime(1, audioContext.currentTime + 0.01);
+    gain.gain.linearRampToValueAtTime(0, audioContext.currentTime + durationMs / 1000);
+    osc.connect(gain);
+    gain.connect(masterGain);
+    osc.start();
+    osc.stop(audioContext.currentTime + durationMs / 1000 + 0.02);
+  };
+
+  musicTimer = window.setInterval(() => {
+    if (audioContext.state === "suspended") {
+      audioContext.resume();
+    }
+    const note = melody[index % melody.length];
+    playNote(note, beatMs * 0.85);
+    index += 1;
+  }, beatMs);
+}
+
+function initAudio() {
+  if (audioContext) {
+    return;
+  }
+  audioContext = new (window.AudioContext || window.webkitAudioContext)();
+  masterGain = audioContext.createGain();
+  masterGain.gain.value = 0.08;
+  masterGain.connect(audioContext.destination);
+}
+
+function playChirp() {
+  if (!audioContext || !masterGain || audioContext.state === "suspended") {
+    return;
+  }
+  const osc = audioContext.createOscillator();
+  const gain = audioContext.createGain();
+  osc.type = "sine";
+  osc.frequency.setValueAtTime(740, audioContext.currentTime);
+  osc.frequency.exponentialRampToValueAtTime(980, audioContext.currentTime + 0.12);
+  gain.gain.setValueAtTime(0, audioContext.currentTime);
+  gain.gain.linearRampToValueAtTime(0.35, audioContext.currentTime + 0.02);
+  gain.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.18);
+  osc.connect(gain);
+  gain.connect(masterGain);
+  osc.start();
+  osc.stop(audioContext.currentTime + 0.2);
+}
+
 function draw() {
   drawBackground();
   balls.forEach(drawBall);
   drawKati();
   drawHUD();
 
-  if (gameState === "start") {
-    drawMessage("Press SPACE to start!", "Keep Kati under each falling ball.");
-  }
   if (gameState === "gameover") {
     drawMessage(
       "Game Over!",
@@ -262,8 +363,9 @@ function loop(timestamp) {
 
 window.addEventListener("keydown", (event) => {
   keys[event.code] = true;
+  startMusic();
   if (event.code === "Space") {
-    if (gameState === "start" || gameState === "gameover") {
+    if (gameState === "gameover") {
       resetGame();
     }
   }
@@ -271,6 +373,10 @@ window.addEventListener("keydown", (event) => {
 
 window.addEventListener("keyup", (event) => {
   keys[event.code] = false;
+});
+
+window.addEventListener("load", () => {
+  startMusic();
 });
 
 requestAnimationFrame(loop);
